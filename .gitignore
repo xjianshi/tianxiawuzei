@@ -8,8 +8,6 @@ venv/
 
 build/
 dist/*
-!dist/天下无贼.app/
-!dist/天下无贼.app/**
 *.egg-info/
 
 .pytest_cache/
