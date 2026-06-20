@@ -7,7 +7,9 @@ __pycache__/
 venv/
 
 build/
-dist/
+dist/*
+!dist/天下无贼.app/
+!dist/天下无贼.app/**
 *.egg-info/
 
 .pytest_cache/
