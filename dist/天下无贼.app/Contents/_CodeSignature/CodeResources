@@ -842,11 +842,11 @@
 		</data>
 		<key>Resources/lib/python3.13/tianxiawuzei/__pycache__/controller.cpython-313.pyc</key>
 		<data>
-		l5vkqInzGqp6GTqMYFha6Iyx0bw=
+		IAZrABzH86QLkz0VoYgmwcAVFjw=
 		</data>
 		<key>Resources/lib/python3.13/tianxiawuzei/__pycache__/menu_app.cpython-313.pyc</key>
 		<data>
-		mNbOTO/SGHYX1WY/NRSL60lTlLQ=
+		11d1DB4+/LlbPZv8ffZnwG6tUS0=
 		</data>
 		<key>Resources/lib/python3.13/tianxiawuzei/__pycache__/menu_state.cpython-313.pyc</key>
 		<data>
@@ -854,7 +854,7 @@
 		</data>
 		<key>Resources/lib/python3.13/tianxiawuzei/__pycache__/platform.cpython-313.pyc</key>
 		<data>
-		C2NXwgtFd7ML8BrsMaU7sAy1jMQ=
+		v85VzxlXRWOefXGF46JjdWYPkjI=
 		</data>
 		<key>Resources/lib/python3.13/tianxiawuzei/__pycache__/support.cpython-313.pyc</key>
 		<data>
@@ -866,11 +866,11 @@
 		</data>
 		<key>Resources/lib/python3.13/tianxiawuzei/controller.py</key>
 		<data>
-		UBkIbJIJVeu51B7OLWQ76zmp6CY=
+		bETYom1VXgVsaTDgrI6IyQs6ydk=
 		</data>
 		<key>Resources/lib/python3.13/tianxiawuzei/menu_app.py</key>
 		<data>
-		926PjpKzbAXoau2zk5CVK9rWxYg=
+		f1ed3rWZ5vBvt8jUwik35ANoLqc=
 		</data>
 		<key>Resources/lib/python3.13/tianxiawuzei/menu_state.py</key>
 		<data>
@@ -878,7 +878,7 @@
 		</data>
 		<key>Resources/lib/python3.13/tianxiawuzei/platform.py</key>
 		<data>
-		9EG23z3SiCNoAh/BILdCUdvyxqI=
+		Lo5mmIogJC2X+4lneA8oRZWK8wk=
 		</data>
 		<key>Resources/lib/python3.13/tianxiawuzei/support.py</key>
 		<data>
@@ -886,7 +886,7 @@
 		</data>
 		<key>Resources/lib/python313.zip</key>
 		<data>
-		ste39g3DBpKJHLdmp+DGaju7Ebg=
+		tSa/V+YTkoq6SZ6U4W0pA5/ttSc=
 		</data>
 		<key>Resources/openssl.ca/cert.pem</key>
 		<data>
@@ -902,7 +902,7 @@
 		</data>
 		<key>Resources/site.pyc</key>
 		<data>
-		cZMWzTKPhYqK1MqdJ2sWMJlJNP0=
+		W8NQyZ+t6UvLOVE6rXmNuOtDpMA=
 		</data>
 		<key>Resources/tianxiawuzei.icns</key>
 		<data>
@@ -2446,14 +2446,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			oazi1G550xgI8s6hBqapetmtRn2HC+zrknmvvMb3Bdo=
+			6CjaQE0qZ74c/HHBtKjD8sx5U3VZw5juofvOO2/w5bc=
 			</data>
 		</dict>
 		<key>Resources/lib/python3.13/tianxiawuzei/__pycache__/menu_app.cpython-313.pyc</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			oSsO2ZwsAXgpll9OskxbhiVdSNWpvjwos61i7IAdvzI=
+			HBnOKpspP3eFKi1x4d5UQaYmMOQhUwqD3UQDHOiLUGE=
 			</data>
 		</dict>
 		<key>Resources/lib/python3.13/tianxiawuzei/__pycache__/menu_state.cpython-313.pyc</key>
@@ -2467,7 +2467,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			epxEB6TdY78kI2hpP2B/UnzYGP/mmCETvihuZXpQ/14=
+			ZtAdTMowhJWw/PcUXK1g6zAdCYfgf2s9lfutK1HYyM8=
 			</data>
 		</dict>
 		<key>Resources/lib/python3.13/tianxiawuzei/__pycache__/support.cpython-313.pyc</key>
@@ -2488,14 +2488,14 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			GHfV6uOoJTKPFTzrdBw2xQ/yiOnvOTl6frsdWpt6+yQ=
+			Vkrq5ZDexNo0YNJKZOsJSVARg7+NUfdwBKlxnH1v0Kk=
 			</data>
 		</dict>
 		<key>Resources/lib/python3.13/tianxiawuzei/menu_app.py</key>
 		<dict>
 			<key>hash2</key>
 			<data>
-			VizsJES3jbwiX8I7buxayX1COAPxnW4ND1KXFXhLa9g=
+			yHwRZ6DmZ8cmTu6dT5BONbomiDZNGXovqR+V8jBs7J0=
 			</data>
 		</dict>
 		<key>Resources/lib/python3.13/tianxiawuzei/menu_state.py</key>
@@ -2509,7 +2509,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			6FKIkqTKgK3mG7StHVGJHgF/gJV38n6ad0m89hIdssk=
+			CJFGzemAYuLwv0svDNjt3ymf7+Pu9JLLQSMRjAJUDHI=
 			</data>
 		</dict>
 		<key>Resources/lib/python3.13/tianxiawuzei/support.py</key>
@@ -2523,7 +2523,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			JQE2/nLkkqMrU45/CCfOIZYKlcjvt2nGjTPgqkpxjyk=
+			RH0NnfLOXlO5HD7Z9KA0X/YTHA0+vilYP/vQCCyRAws=
 			</data>
 		</dict>
 		<key>Resources/openssl.ca/cert.pem</key>
@@ -2551,7 +2551,7 @@
 		<dict>
 			<key>hash2</key>
 			<data>
-			1YEexcVAm48HZ7/J7XTALy1jWI+Hdlv4Y6DS6uRyptA=
+			G+EbJyuwv7ruMKOVFG6TMVG4RXbtDrs1Au3/iW2Recw=
 			</data>
 		</dict>
 		<key>Resources/tianxiawuzei.icns</key>

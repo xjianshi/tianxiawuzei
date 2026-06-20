@@ -38,8 +38,10 @@ class MacPlatform:
             ]
         )
 
-    def speak(self, voice: str, rate: int, text: str) -> None:
-        subprocess.Popen(["say", "-v", voice, "-r", str(rate), text])
+    def speak(self, voice: str, rate: int, text: str, *, wait: bool = False) -> None:
+        process = subprocess.Popen(["say", "-v", voice, "-r", str(rate), text])
+        if wait:
+            process.wait()
 
     def is_speaking(self) -> bool:
         result = self.shell("pgrep -x say >/dev/null 2>&1", check=False)
@@ -78,6 +80,8 @@ class FakeMacPlatform:
     fail_enable_sleep: bool = False
     fail_restore_sleep: bool = False
     spoken: list[tuple[str, int, str]] = field(default_factory=list)
+    output_history: list[tuple[int, bool]] = field(default_factory=list)
+    output_muted_during_last_speech: bool | None = None
     speech_stopped: int = 0
     output_changes: int = 0
     speaking: bool = False
@@ -92,10 +96,14 @@ class FakeMacPlatform:
         self.output_changes += 1
         self.output_volume = volume
         self.output_muted = muted
+        self.output_history.append((volume, muted))
 
-    def speak(self, voice: str, rate: int, text: str) -> None:
+    def speak(self, voice: str, rate: int, text: str, *, wait: bool = False) -> None:
+        self.output_muted_during_last_speech = self.output_muted
         self.spoken.append((voice, rate, text))
         self.speaking = True
+        if wait:
+            self.speaking = False
 
     def is_speaking(self) -> bool:
         return self.speaking

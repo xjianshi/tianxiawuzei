@@ -63,6 +63,20 @@ class AlarmController:
             return CloseResult.ALARM_STOPPED_SETTINGS_NOT_RESTORED
         return CloseResult.CLOSED
 
+    def preview_voice(self) -> None:
+        if self.mode != Mode.NONE:
+            raise RuntimeError("报警监控运行期间不允许试听报警语音")
+        self.platform.set_output(self.config.alarm_volume, False)
+        try:
+            self.platform.speak(
+                self.config.voice,
+                self.config.speech_rate,
+                self.config.alarm_text,
+                wait=True,
+            )
+        finally:
+            self.platform.set_output(0, True)
+
     def _poll_charger(self) -> None:
         if self.platform.power_source() == "Battery Power":
             self._speak_alarm()

@@ -168,6 +168,16 @@ class AlarmControllerTest(unittest.TestCase):
 
         self.assertEqual(self.controller.config.alarm_volume, 60)
 
+    def test_preview_voice_keeps_output_audible_until_speech_finishes(self):
+        self.controller.preview_voice()
+
+        self.assertEqual(
+            self.platform.output_history,
+            [(60, False), (0, True)],
+        )
+        self.assertEqual(self.platform.spoken[-1], ("Sin-ji", 165, "请不要碰我电脑"))
+        self.assertEqual(self.platform.output_muted_during_last_speech, False)
+
 
 class MenuStateTest(unittest.TestCase):
     def test_menu_title_is_thief_when_no_monitor_is_running(self):

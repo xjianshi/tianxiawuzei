@@ -164,9 +164,7 @@ class TianxiawuzeiApp(BaseApp):
     def preview_voice(self, _):
         if not self._ensure_can_change_config():
             return
-        self.controller.platform.set_output(self.config.alarm_volume, False)
-        self.controller.platform.speak(self.config.voice, self.config.speech_rate, self.config.alarm_text)
-        self.controller.platform.set_output(0, True)
+        self.controller.preview_voice()
 
     def show_usage(self, _):
         rumps.alert(title=self._t("天下无贼使用说明", "Tianxiawuzei Help"), message=usage_text(self.config.language))
