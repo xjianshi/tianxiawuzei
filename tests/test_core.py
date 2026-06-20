@@ -65,6 +65,8 @@ class AlarmControllerTest(unittest.TestCase):
         self.assertEqual(self.platform.output_changes, 0)
 
     def test_charger_mode_alarms_on_battery_and_stops_on_ac(self):
+        self.platform.output_volume = 35
+        self.platform.output_muted = False
         self.controller.start_charger_mode()
 
         self.platform.current_power_source = "Battery Power"
@@ -78,8 +80,8 @@ class AlarmControllerTest(unittest.TestCase):
         self.controller.poll_once()
 
         self.assertFalse(self.controller.alarming)
-        self.assertEqual(self.platform.output_volume, 0)
-        self.assertTrue(self.platform.output_muted)
+        self.assertEqual(self.platform.output_volume, 35)
+        self.assertFalse(self.platform.output_muted)
 
     def test_alarm_restores_configured_volume_if_someone_turns_it_down(self):
         self.controller.start_charger_mode()
@@ -108,6 +110,19 @@ class AlarmControllerTest(unittest.TestCase):
         self.assertTrue(self.controller.alarming)
         self.assertEqual(self.platform.output_volume, 60)
         self.assertEqual(len(self.platform.spoken), 1)
+
+    def test_lid_mode_close_restores_output_from_before_alarm(self):
+        self.platform.output_volume = 35
+        self.platform.output_muted = False
+        self.controller.start_lid_mode()
+
+        self.platform.current_lid_closed = True
+        self.controller.poll_once()
+        result = self.controller.close("1111")
+
+        self.assertEqual(result, CloseResult.CLOSED)
+        self.assertEqual(self.platform.output_volume, 35)
+        self.assertFalse(self.platform.output_muted)
 
     def test_alarm_repeats_after_previous_phrase_finishes(self):
         self.controller.start_charger_mode()
@@ -168,15 +183,29 @@ class AlarmControllerTest(unittest.TestCase):
 
         self.assertEqual(self.controller.config.alarm_volume, 60)
 
-    def test_preview_voice_keeps_output_audible_until_speech_finishes(self):
+    def test_preview_voice_restores_previous_output_after_speech_finishes(self):
+        self.platform.output_volume = 35
+        self.platform.output_muted = False
+
+        self.controller.preview_voice()
+
+        self.assertEqual(
+            self.platform.output_history,
+            [(60, False), (35, False)],
+        )
+        self.assertEqual(self.platform.spoken[-1], ("Sin-ji", 165, "请不要碰我电脑"))
+        self.assertEqual(self.platform.output_muted_during_last_speech, False)
+
+    def test_preview_voice_restores_previous_muted_output_after_speech_finishes(self):
+        self.platform.output_volume = 0
+        self.platform.output_muted = True
+
         self.controller.preview_voice()
 
         self.assertEqual(
             self.platform.output_history,
             [(60, False), (0, True)],
         )
-        self.assertEqual(self.platform.spoken[-1], ("Sin-ji", 165, "请不要碰我电脑"))
-        self.assertEqual(self.platform.output_muted_during_last_speech, False)
 
 
 class MenuStateTest(unittest.TestCase):

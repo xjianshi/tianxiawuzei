@@ -4,6 +4,12 @@ import subprocess
 from dataclasses import dataclass, field
 
 
+@dataclass(frozen=True)
+class OutputState:
+    volume: int
+    muted: bool
+
+
 class MacPlatform:
     def run(self, args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
         return subprocess.run(args, check=check, text=True, capture_output=True)
@@ -37,6 +43,19 @@ class MacPlatform:
                 f"set volume {mute_clause}",
             ]
         )
+
+    def output_state(self) -> OutputState:
+        result = self.run(
+            [
+                "osascript",
+                "-e",
+                "set s to get volume settings",
+                "-e",
+                'return (output volume of s as string) & "\n" & (output muted of s as string)',
+            ]
+        )
+        lines = result.stdout.splitlines()
+        return OutputState(volume=int(lines[0]), muted=lines[1].strip().lower() == "true")
 
     def speak(self, voice: str, rate: int, text: str, *, wait: bool = False) -> None:
         process = subprocess.Popen(["say", "-v", voice, "-r", str(rate), text])
@@ -97,6 +116,9 @@ class FakeMacPlatform:
         self.output_volume = volume
         self.output_muted = muted
         self.output_history.append((volume, muted))
+
+    def output_state(self) -> OutputState:
+        return OutputState(volume=self.output_volume, muted=self.output_muted)
 
     def speak(self, voice: str, rate: int, text: str, *, wait: bool = False) -> None:
         self.output_muted_during_last_speech = self.output_muted
