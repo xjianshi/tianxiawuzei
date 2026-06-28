@@ -26,6 +26,7 @@ class AlarmController:
         self._lid_triggered = False
         self._speech_output_before_alarm: OutputState | None = None
         self.sleep_restore_pending = False
+        self._sleep_disabled_changed_by_app = False
 
     def update_config(self, config: AppConfig) -> None:
         if self.mode != Mode.NONE:
@@ -36,9 +37,13 @@ class AlarmController:
         if self.sleep_restore_pending and not self.restore_sleep_disabled():
             raise RuntimeError("系统休眠设置尚未恢复，请先恢复 SleepDisabled 后再开启电脑监控")
         self._reset_runtime_state()
-        if not self.platform.set_sleep_disabled(1):
+        if self._current_sleep_disabled() == 1:
+            self._sleep_disabled_changed_by_app = False
+        elif not self.platform.set_sleep_disabled(1):
             self.mode = Mode.NONE
             raise RuntimeError("无法开启合盖不睡眠，电脑监控未启动")
+        else:
+            self._sleep_disabled_changed_by_app = True
         self.sleep_restore_pending = False
         self.mode = Mode.COMPUTER
         return "电脑监控开启中"
@@ -51,7 +56,7 @@ class AlarmController:
         if password != self.config.close_password:
             return CloseResult.WRONG_PASSWORD
 
-        needs_sleep_restore = self.mode == Mode.COMPUTER
+        needs_sleep_restore = self.mode == Mode.COMPUTER and self._sleep_disabled_changed_by_app
         self.platform.stop_speech()
         self._restore_speech_output()
         self._reset_runtime_state()
@@ -65,9 +70,16 @@ class AlarmController:
     def restore_sleep_disabled(self) -> bool:
         if self.platform.set_sleep_disabled(0):
             self.sleep_restore_pending = False
+            self._sleep_disabled_changed_by_app = False
             return True
         self.sleep_restore_pending = True
         return False
+
+    def _current_sleep_disabled(self) -> int:
+        sleep_disabled = getattr(self.platform, "sleep_disabled", -1)
+        if callable(sleep_disabled):
+            return sleep_disabled()
+        return sleep_disabled
 
     def preview_voice(self) -> None:
         if self.mode != Mode.NONE:

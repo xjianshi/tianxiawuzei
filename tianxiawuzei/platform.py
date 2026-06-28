@@ -115,6 +115,7 @@ class FakeMacPlatform:
     output_muted_during_last_speech: bool | None = None
     speech_stopped: int = 0
     output_changes: int = 0
+    sleep_disabled_changes: list[int] = field(default_factory=list)
     speaking: bool = False
 
     def power_source(self) -> str:
@@ -147,6 +148,7 @@ class FakeMacPlatform:
         self.speaking = False
 
     def set_sleep_disabled(self, value: int) -> bool:
+        self.sleep_disabled_changes.append(value)
         if value == 1 and self.fail_enable_sleep:
             self.last_sleep_disabled_result = CommandResult(1, "", "enable failed")
             return False

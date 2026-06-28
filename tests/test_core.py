@@ -57,6 +57,18 @@ class AlarmControllerTest(unittest.TestCase):
         self.assertEqual(self.controller.mode, Mode.COMPUTER)
         self.assertEqual(self.platform.output_changes, 0)
         self.assertEqual(self.platform.sleep_disabled, 1)
+        self.assertEqual(self.platform.sleep_disabled_changes, [1])
+
+    def test_monitor_does_not_modify_sleep_disabled_when_it_was_already_enabled(self):
+        self.platform.sleep_disabled = 1
+
+        message = self.controller.start_computer_monitor()
+        result = self.controller.close("1111")
+
+        self.assertEqual(message, "电脑监控开启中")
+        self.assertEqual(result, CloseResult.CLOSED)
+        self.assertEqual(self.platform.sleep_disabled, 1)
+        self.assertEqual(self.platform.sleep_disabled_changes, [])
 
     def test_computer_monitor_alarms_on_battery_and_stops_on_ac(self):
         self.platform.output_volume = 35
