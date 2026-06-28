@@ -25,6 +25,7 @@ class AlarmController:
         self.alarming = False
         self._lid_triggered = False
         self._speech_output_before_alarm: OutputState | None = None
+        self.sleep_restore_pending = False
 
     def update_config(self, config: AppConfig) -> None:
         if self.mode != Mode.NONE:
@@ -32,10 +33,13 @@ class AlarmController:
         self.config = config.normalized()
 
     def start_computer_monitor(self) -> str:
+        if self.sleep_restore_pending and not self.restore_sleep_disabled():
+            raise RuntimeError("系统休眠设置尚未恢复，请先恢复 SleepDisabled 后再开启电脑监控")
         self._reset_runtime_state()
         if not self.platform.set_sleep_disabled(1):
             self.mode = Mode.NONE
             raise RuntimeError("无法开启合盖不睡眠，电脑监控未启动")
+        self.sleep_restore_pending = False
         self.mode = Mode.COMPUTER
         return "电脑监控开启中"
 
@@ -53,9 +57,17 @@ class AlarmController:
         self._reset_runtime_state()
         self.mode = Mode.NONE
 
-        if needs_sleep_restore and not self.platform.set_sleep_disabled(0):
+        if needs_sleep_restore and not self.restore_sleep_disabled():
+            self.sleep_restore_pending = True
             return CloseResult.ALARM_STOPPED_SETTINGS_NOT_RESTORED
         return CloseResult.CLOSED
+
+    def restore_sleep_disabled(self) -> bool:
+        if self.platform.set_sleep_disabled(0):
+            self.sleep_restore_pending = False
+            return True
+        self.sleep_restore_pending = True
+        return False
 
     def preview_voice(self) -> None:
         if self.mode != Mode.NONE:

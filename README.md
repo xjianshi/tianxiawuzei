@@ -83,7 +83,7 @@ sudo pmset -a disablesleep 0
 报警已停，但系统设置尚未恢复。
 ```
 
-此时可以手动执行：
+此时 App 会自动重试恢复，也可以在菜单栏点击“恢复系统休眠设置”。如果仍然失败，可以手动执行：
 
 ```bash
 sudo pmset -a disablesleep 0

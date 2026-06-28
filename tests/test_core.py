@@ -148,6 +148,8 @@ class AlarmControllerTest(unittest.TestCase):
         self.assertEqual(self.controller.mode, Mode.COMPUTER)
         self.assertTrue(self.controller.alarming)
         self.assertEqual(self.platform.output_volume, 60)
+        self.assertEqual(self.platform.sleep_disabled, 1)
+        self.assertFalse(self.controller.sleep_restore_pending)
 
     def test_correct_close_password_stops_computer_monitor(self):
         self.controller.start_computer_monitor()
@@ -169,6 +171,30 @@ class AlarmControllerTest(unittest.TestCase):
         self.assertEqual(result, CloseResult.ALARM_STOPPED_SETTINGS_NOT_RESTORED)
         self.assertEqual(self.controller.mode, Mode.NONE)
         self.assertEqual(self.platform.sleep_disabled, 1)
+        self.assertTrue(self.controller.sleep_restore_pending)
+
+    def test_pending_sleep_restore_can_be_retried_successfully(self):
+        self.platform.fail_restore_sleep = True
+        self.controller.start_computer_monitor()
+        self.controller.close("1111")
+
+        self.platform.fail_restore_sleep = False
+        restored = self.controller.restore_sleep_disabled()
+
+        self.assertTrue(restored)
+        self.assertEqual(self.platform.sleep_disabled, 0)
+        self.assertFalse(self.controller.sleep_restore_pending)
+
+    def test_pending_sleep_restore_blocks_starting_monitor_until_restored(self):
+        self.platform.fail_restore_sleep = True
+        self.controller.start_computer_monitor()
+        self.controller.close("1111")
+
+        with self.assertRaises(RuntimeError):
+            self.controller.start_computer_monitor()
+
+        self.assertEqual(self.controller.mode, Mode.NONE)
+        self.assertTrue(self.controller.sleep_restore_pending)
 
     def test_public_config_cannot_change_while_monitor_is_running(self):
         self.controller.start_computer_monitor()

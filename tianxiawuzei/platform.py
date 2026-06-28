@@ -10,7 +10,17 @@ class OutputState:
     muted: bool
 
 
+@dataclass(frozen=True)
+class CommandResult:
+    returncode: int
+    stdout: str = ""
+    stderr: str = ""
+
+
 class MacPlatform:
+    def __init__(self):
+        self.last_sleep_disabled_result = CommandResult(0)
+
     def run(self, args: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
         return subprocess.run(args, check=check, text=True, capture_output=True)
 
@@ -79,6 +89,7 @@ class MacPlatform:
             ],
             check=False,
         )
+        self.last_sleep_disabled_result = CommandResult(result.returncode, result.stdout, result.stderr)
         return result.returncode == 0
 
     def sleep_disabled(self) -> int:
@@ -98,6 +109,7 @@ class FakeMacPlatform:
     sleep_disabled: int = 0
     fail_enable_sleep: bool = False
     fail_restore_sleep: bool = False
+    last_sleep_disabled_result: CommandResult = field(default_factory=lambda: CommandResult(0))
     spoken: list[tuple[str, int, str]] = field(default_factory=list)
     output_history: list[tuple[int, bool]] = field(default_factory=list)
     output_muted_during_last_speech: bool | None = None
@@ -136,8 +148,11 @@ class FakeMacPlatform:
 
     def set_sleep_disabled(self, value: int) -> bool:
         if value == 1 and self.fail_enable_sleep:
+            self.last_sleep_disabled_result = CommandResult(1, "", "enable failed")
             return False
         if value == 0 and self.fail_restore_sleep:
+            self.last_sleep_disabled_result = CommandResult(1, "", "restore failed")
             return False
         self.sleep_disabled = value
+        self.last_sleep_disabled_result = CommandResult(0)
         return True

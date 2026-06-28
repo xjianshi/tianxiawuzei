@@ -34,6 +34,7 @@ macOS may immediately sleep when the lid is closed, and a normal app cannot keep
 
 Closing and safety:
 - Closing any alarm monitor requires the close password.
+- If SleepDisabled is not restored during close, the app retries automatically and you can use “Restore System Sleep Settings” from the menu.
 - After an alarm is triggered, the app keeps restoring the system volume to your configured alarm volume to prevent someone from turning it down.
 - While monitoring is active, alarm volume, alarm text, and close password cannot be changed.
 """
@@ -59,6 +60,7 @@ Closing and safety:
 
 关闭与安全：
 - 关闭任何报警监控都需要输入关闭密码。
+- 如果关闭时 SleepDisabled 没有恢复，App 会自动重试，也可以从菜单点击“恢复系统休眠设置”。
 - 报警触发后，App 会持续把系统音量恢复到你设置的报警音量，避免被人调小。
 - 报警监控运行期间，不允许修改报警音量、报警词汇或关闭密码。
 """
