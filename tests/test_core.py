@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 
 from tianxiawuzei.config import AppConfig, ConfigStore
 from tianxiawuzei.controller import AlarmController, CloseResult, Mode
-from tianxiawuzei.menu_state import menu_title_for_mode, scenario_hint_text, status_text_for_mode
+from tianxiawuzei.menu_state import menu_title_for_mode, scenario_hint_text, sleep_status_text, status_text_for_mode
 from tianxiawuzei.platform import FakeMacPlatform
 from tianxiawuzei.support import FEEDBACK_EMAIL, feedback_mailto, usage_text
 
@@ -252,6 +252,13 @@ class MenuStateTest(unittest.TestCase):
         self.assertEqual(status_text_for_mode(Mode.COMPUTER, True, "zh"), "状态：报警中")
         self.assertEqual(status_text_for_mode(Mode.COMPUTER, False, "zh"), "状态：电脑监控开启中")
         self.assertEqual(status_text_for_mode(Mode.COMPUTER, False, "en"), "Status: Computer monitoring")
+
+    def test_sleep_status_text_shows_whether_system_sleep_is_allowed(self):
+        self.assertEqual(sleep_status_text(0, "zh"), "系统休眠：允许")
+        self.assertEqual(sleep_status_text(1, "zh"), "系统休眠：已阻止")
+        self.assertEqual(sleep_status_text(-1, "zh"), "系统休眠：未知")
+        self.assertEqual(sleep_status_text(0, "en"), "System sleep: Allowed")
+        self.assertEqual(sleep_status_text(1, "en"), "System sleep: Prevented")
 
     def test_scenario_hint_explains_temporary_away_use_case(self):
         self.assertEqual(scenario_hint_text("zh"), "咖啡馆图书馆临时离开电脑时开启使用")

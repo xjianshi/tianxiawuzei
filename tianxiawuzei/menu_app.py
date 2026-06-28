@@ -13,7 +13,7 @@ except ImportError:  # pragma: no cover - exercised by users without dependency.
 
 from .config import ConfigStore, default_config_path
 from .controller import AlarmController, CloseResult, Mode
-from .menu_state import menu_title_for_mode, scenario_hint_text, status_text_for_mode
+from .menu_state import menu_title_for_mode, scenario_hint_text, sleep_status_text, status_text_for_mode
 from .platform import MacPlatform
 from .support import feedback_mailto, usage_text
 
@@ -38,6 +38,7 @@ class TianxiawuzeiApp(BaseApp):
         self.name_item = rumps.MenuItem("天下无贼")
         self.scenario_hint_item = rumps.MenuItem(scenario_hint_text(self.config.language))
         self.status_item = rumps.MenuItem(status_text_for_mode(Mode.NONE, False, self.config.language))
+        self.sleep_status_item = rumps.MenuItem("")
         self.start_monitor_item = rumps.MenuItem("", callback=self.start_monitor)
         self.close_item = rumps.MenuItem("", callback=self.close_current)
         self.restore_sleep_item = rumps.MenuItem("", callback=self.restore_sleep_settings)
@@ -57,6 +58,7 @@ class TianxiawuzeiApp(BaseApp):
             self.name_item,
             self.scenario_hint_item,
             self.status_item,
+            self.sleep_status_item,
             None,
             self.start_monitor_item,
             self.close_item,
@@ -92,6 +94,7 @@ class TianxiawuzeiApp(BaseApp):
             self.last_lid_state = None
             self._start_worker()
             self._set_status(message)
+            self._sync_sleep_status()
             self._sync_menu_title()
             self._log(message)
         rumps.notification("天下无贼", message, "拔电源或合盖将触发报警。")
@@ -209,6 +212,7 @@ class TianxiawuzeiApp(BaseApp):
                 self.worker.join(timeout=1.5)
             self.stop_event.clear()
             self._set_status("状态：未开启")
+            self._sync_sleep_status()
             self._sync_menu_title()
             self._log(f"monitor closed: {result.value}")
         if result == CloseResult.ALARM_STOPPED_SETTINGS_NOT_RESTORED:
@@ -246,6 +250,7 @@ class TianxiawuzeiApp(BaseApp):
                 self._log_state_if_changed()
                 self.controller.poll_once()
                 self._set_status(status_text_for_mode(self.controller.mode, self.controller.alarming, self.config.language))
+                self._sync_sleep_status()
                 if self.controller.alarming:
                     self._log("alarm active")
             time.sleep(0.5)
@@ -256,9 +261,13 @@ class TianxiawuzeiApp(BaseApp):
     def _sync_menu_title(self) -> None:
         self.title = menu_title_for_mode(self.controller.mode)
 
+    def _sync_sleep_status(self) -> None:
+        self.sleep_status_item.title = sleep_status_text(self._current_sleep_disabled(), self.config.language)
+
     def _refresh_menu_text(self) -> None:
         self.scenario_hint_item.title = scenario_hint_text(self.config.language)
         self.status_item.title = status_text_for_mode(self.controller.mode, self.controller.alarming, self.config.language)
+        self._sync_sleep_status()
         self.start_monitor_item.title = self._t("开启电脑监控（拔充电器/合盖触发报警）", "Start Computer Monitoring (charger/lid alarm)")
         self.close_item.title = self._t("关闭电脑监控", "Close Computer Monitoring")
         self.restore_sleep_item.title = self._t("恢复系统休眠设置", "Restore System Sleep Settings")
@@ -309,6 +318,7 @@ class TianxiawuzeiApp(BaseApp):
             self._set_status(self._t("状态：未开启", "Status: Off"))
         elif self.controller.sleep_restore_pending:
             self._set_status(self._t("状态：报警已停，系统设置待恢复", "Status: Alarm stopped, system settings need restore"))
+        self._sync_sleep_status()
 
     def _log_sleep_restore_result(self, prefix: str, restored: bool) -> None:
         result = getattr(self.controller.platform, "last_sleep_disabled_result", None)

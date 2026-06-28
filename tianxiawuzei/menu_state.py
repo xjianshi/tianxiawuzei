@@ -27,3 +27,17 @@ def status_text_for_mode(mode: Mode, alarming: bool, language: str = "zh") -> st
     if mode == Mode.COMPUTER:
         return "状态：电脑监控开启中"
     return "状态：未开启"
+
+
+def sleep_status_text(sleep_disabled: int, language: str = "zh") -> str:
+    if language == "en":
+        if sleep_disabled == 0:
+            return "System sleep: Allowed"
+        if sleep_disabled == 1:
+            return "System sleep: Prevented"
+        return "System sleep: Unknown"
+    if sleep_disabled == 0:
+        return "系统休眠：允许"
+    if sleep_disabled == 1:
+        return "系统休眠：已阻止"
+    return "系统休眠：未知"
