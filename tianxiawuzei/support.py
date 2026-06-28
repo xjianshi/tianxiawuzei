@@ -34,7 +34,11 @@ macOS may immediately sleep when the lid is closed, and a normal app cannot keep
 
 Closing and safety:
 - Closing any alarm monitor requires the close password.
+- After the close password is accepted, computer monitoring is considered closed.
+- The app only shows system sleep restore success or failure if it actually tried to restore SleepDisabled during this close.
+- If the system password dialog is canceled or closed, monitoring stops but SleepDisabled may remain unrestored. The menu shows “Monitoring status: system settings need restore”, and “Start Computer Monitoring” stays disabled until restoration succeeds.
 - If SleepDisabled is not restored during close, the app retries automatically and you can use “Restore System Sleep Settings” from the menu.
+- If SleepDisabled was already enabled before monitoring started, Tianxiawuzei does not change it and will not show a sleep restore result when closing monitoring.
 - After an alarm is triggered, the app keeps restoring the system volume to your configured alarm volume to prevent someone from turning it down.
 - While monitoring is active, alarm volume, alarm text, and close password cannot be changed.
 """
@@ -60,7 +64,11 @@ Closing and safety:
 
 关闭与安全：
 - 关闭任何报警监控都需要输入关闭密码。
+- 关闭密码正确后，电脑监控即视为关闭成功。
+- 只有本次确实执行了系统休眠恢复动作，App 才会提示系统休眠恢复成功或失败。
+- 如果系统密码对话框取消或关闭，报警会停止，但 SleepDisabled 可能仍未恢复。菜单会显示“监控状态：系统设置待恢复”，“开启电脑监控”会保持灰化，直到恢复成功。
 - 如果关闭时 SleepDisabled 没有恢复，App 会自动重试，也可以从菜单点击“恢复系统休眠设置”。
+- 如果开启监控前 SleepDisabled 本来就是 1，天下无贼不会主动修改系统休眠设置；关闭监控时也不会执行恢复动作，因此不会提示系统休眠恢复成功或失败。
 - 报警触发后，App 会持续把系统音量恢复到你设置的报警音量，避免被人调小。
 - 报警监控运行期间，不允许修改报警音量、报警词汇或关闭密码。
 """

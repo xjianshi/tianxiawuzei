@@ -3,6 +3,7 @@ from __future__ import annotations
 import threading
 import time
 import webbrowser
+import signal
 from dataclasses import replace
 from datetime import datetime
 
@@ -13,12 +14,48 @@ except ImportError:  # pragma: no cover - exercised by users without dependency.
 
 from .config import ConfigStore, default_config_path
 from .controller import AlarmController, CloseResult, Mode
-from .menu_state import menu_title_for_mode, scenario_hint_text, sleep_status_text, status_text_for_mode
+from .menu_state import (
+    menu_title_for_mode,
+    pending_sleep_restore_status_text,
+    scenario_hint_text,
+    sleep_status_text,
+    start_monitor_enabled,
+    status_text_for_mode,
+)
 from .platform import MacPlatform
 from .support import feedback_mailto, usage_text
 
 
 BaseApp = rumps.App if rumps is not None else object
+
+
+def _select_language(language: str, zh: str, en: str) -> str:
+    return en if language == "en" else zh
+
+
+def close_success_tip(language: str) -> tuple[str, str]:
+    return (
+        _select_language(language, "电脑监控已关闭", "Computer Monitoring Closed"),
+        _select_language(language, "关闭密码正确，电脑监控已关闭。", "The close password is correct. Computer monitoring has been closed."),
+    )
+
+
+def sleep_restore_success_tip(language: str) -> tuple[str, str]:
+    return (
+        _select_language(language, "系统休眠已恢复成功", "System Sleep Restored"),
+        _select_language(language, "SleepDisabled 已恢复为 0。", "SleepDisabled has been restored to 0."),
+    )
+
+
+def sleep_restore_failed_tip(language: str) -> tuple[str, str]:
+    return (
+        _select_language(language, "未能成功恢复系统休眠", "System Sleep Was Not Restored"),
+        _select_language(
+            language,
+            "系统密码对话框可能已取消或关闭。可以点击“恢复系统休眠设置”手动恢复。",
+            "The system password dialog may have been canceled or closed. Use “Restore System Sleep Settings” to restore it manually.",
+        ),
+    )
 
 
 class TianxiawuzeiApp(BaseApp):
@@ -77,6 +114,7 @@ class TianxiawuzeiApp(BaseApp):
             self.quit_item,
         ]
         self._refresh_menu_text()
+        self._install_signal_guards()
 
     def start_monitor(self, _):
         self._log("start computer monitor requested")
@@ -96,8 +134,9 @@ class TianxiawuzeiApp(BaseApp):
             self._set_status(message)
             self._sync_sleep_status()
             self._sync_menu_title()
+            self._sync_menu_enabled_state()
             self._log(message)
-        rumps.notification("天下无贼", message, "拔电源或合盖将触发报警。")
+        self._notify_tip("天下无贼", message, "拔电源或合盖将触发报警。")
 
     def close_current(self, _):
         self._close_with_password("关闭电脑监控")
@@ -108,9 +147,14 @@ class TianxiawuzeiApp(BaseApp):
             self._log_sleep_restore_result("manual sleep restore", restored)
             self._sync_after_sleep_restore_attempt(restored)
         if restored:
-            rumps.notification("天下无贼", self._t("系统设置已恢复", "System Settings Restored"), self._t("SleepDisabled 已恢复为 0。", "SleepDisabled has been restored to 0."))
+            self._show_tip(*sleep_restore_success_tip(self.config.language))
         else:
-            rumps.alert(self._t("系统设置尚未恢复，请稍后重试或手动检查 SleepDisabled。", "System settings were not restored. Please retry later or check SleepDisabled manually."))
+            title, message = sleep_restore_failed_tip(self.config.language)
+            rumps.alert(
+                title=title,
+                message=message,
+                ok=self._t("知道了", "OK"),
+            )
 
     def set_alarm_volume(self, _):
         if not self._ensure_can_change_config():
@@ -211,17 +255,28 @@ class TianxiawuzeiApp(BaseApp):
             if self.worker and self.worker.is_alive():
                 self.worker.join(timeout=1.5)
             self.stop_event.clear()
-            self._set_status("状态：未开启")
+            self._set_status(self._t("监控状态：未开启", "Monitoring status: Off"))
             self._sync_sleep_status()
             self._sync_menu_title()
+            self._sync_menu_enabled_state()
             self._log(f"monitor closed: {result.value}")
+            sleep_restore_attempted = self.controller.sleep_restore_attempted_on_last_close
         if result == CloseResult.ALARM_STOPPED_SETTINGS_NOT_RESTORED:
-            self._set_status(self._t("状态：报警已停，系统设置待恢复", "Status: Alarm stopped, system settings need restore"))
+            self._set_status(pending_sleep_restore_status_text(self.config.language))
+            self._sync_menu_enabled_state()
             self._log_sleep_restore_result("close sleep restore", False)
             self._start_sleep_restore_retry()
-            rumps.alert(self._t("报警已停，但系统设置尚未恢复。请点击“恢复系统休眠设置”或稍后重试。", "Alarm stopped, but system settings were not restored. Use “Restore System Sleep Settings” or retry later."))
+            self._show_tip(*close_success_tip(self.config.language))
+            title, message = sleep_restore_failed_tip(self.config.language)
+            rumps.alert(
+                title=title,
+                message=message,
+                ok=self._t("知道了", "OK"),
+            )
         else:
-            rumps.notification("天下无贼", self._t("电脑监控已关闭", "Computer Monitoring Closed"), self._t("系统休眠设置已恢复。", "System sleep settings have been restored."))
+            self._show_tip(*close_success_tip(self.config.language))
+            if sleep_restore_attempted:
+                self._show_tip(*sleep_restore_success_tip(self.config.language))
         return True
 
     def _ensure_can_change_config(self) -> bool:
@@ -281,6 +336,7 @@ class TianxiawuzeiApp(BaseApp):
         self.usage_item.title = self._t("使用说明", "Help")
         self.feedback_item.title = self._t("反馈建议", "Feedback")
         self.quit_item.title = self._t("退出", "Quit")
+        self._sync_menu_enabled_state()
 
     def _t(self, zh: str, en: str) -> str:
         return en if self.config.language == "en" else zh
@@ -310,15 +366,16 @@ class TianxiawuzeiApp(BaseApp):
                 self._log_sleep_restore_result("auto sleep restore retry", restored)
                 self._sync_after_sleep_restore_attempt(restored)
                 if restored:
-                    rumps.notification("天下无贼", self._t("系统设置已恢复", "System Settings Restored"), self._t("SleepDisabled 已恢复为 0。", "SleepDisabled has been restored to 0."))
+                    self._show_tip(*sleep_restore_success_tip(self.config.language))
                     return
 
     def _sync_after_sleep_restore_attempt(self, restored: bool) -> None:
         if restored:
-            self._set_status(self._t("状态：未开启", "Status: Off"))
+            self._set_status(self._t("监控状态：未开启", "Monitoring status: Off"))
         elif self.controller.sleep_restore_pending:
-            self._set_status(self._t("状态：报警已停，系统设置待恢复", "Status: Alarm stopped, system settings need restore"))
+            self._set_status(pending_sleep_restore_status_text(self.config.language))
         self._sync_sleep_status()
+        self._sync_menu_enabled_state()
 
     def _log_sleep_restore_result(self, prefix: str, restored: bool) -> None:
         result = getattr(self.controller.platform, "last_sleep_disabled_result", None)
@@ -338,6 +395,34 @@ class TianxiawuzeiApp(BaseApp):
         if callable(sleep_disabled):
             return sleep_disabled()
         return sleep_disabled
+
+    def _sync_menu_enabled_state(self) -> None:
+        if start_monitor_enabled(self.controller.mode, self.controller.sleep_restore_pending):
+            self.start_monitor_item.set_callback(self.start_monitor)
+        else:
+            self.start_monitor_item.set_callback(None)
+
+    def _notify_tip(self, title: str, subtitle: str, message: str) -> None:
+        rumps.alert(title=subtitle or title, message=message, ok=self._t("知道了", "OK"))
+
+    def _show_tip(self, title: str, message: str) -> None:
+        self._notify_tip("天下无贼", title, message)
+
+    def _install_signal_guards(self) -> None:
+        signal.signal(signal.SIGTERM, self._handle_external_stop)
+        signal.signal(signal.SIGINT, self._handle_external_stop)
+
+    def _handle_external_stop(self, signum, _frame) -> None:
+        if self.controller.mode != Mode.NONE:
+            self._log(f"external stop blocked while monitoring: signal={signum}")
+            self._notify_tip(
+                "天下无贼",
+                self._t("电脑监控运行中", "Computer Monitoring Active"),
+                self._t("请先通过菜单“关闭电脑监控”验证关闭密码。", "Use the menu to close monitoring with the close password first."),
+            )
+            return
+        self._log(f"external stop accepted: signal={signum}")
+        rumps.quit_application()
 
     def _log(self, message: str) -> None:
         log_path = default_config_path().parent / "app.log"

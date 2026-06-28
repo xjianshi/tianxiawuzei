@@ -18,15 +18,25 @@ def scenario_hint_text(language: str = "zh") -> str:
 def status_text_for_mode(mode: Mode, alarming: bool, language: str = "zh") -> str:
     if language == "en":
         if alarming:
-            return "Status: Alarming"
+            return "Monitoring status: Alarming"
         if mode == Mode.COMPUTER:
-            return "Status: Computer monitoring"
-        return "Status: Off"
+            return "Monitoring status: Computer monitoring"
+        return "Monitoring status: Off"
     if alarming:
-        return "状态：报警中"
+        return "监控状态：报警中"
     if mode == Mode.COMPUTER:
-        return "状态：电脑监控开启中"
-    return "状态：未开启"
+        return "监控状态：电脑监控开启中"
+    return "监控状态：未开启"
+
+
+def pending_sleep_restore_status_text(language: str = "zh") -> str:
+    if language == "en":
+        return "Monitoring status: system settings need restore"
+    return "监控状态：系统设置待恢复"
+
+
+def start_monitor_enabled(mode: Mode, sleep_restore_pending: bool) -> bool:
+    return mode == Mode.NONE and not sleep_restore_pending
 
 
 def sleep_status_text(sleep_disabled: int, language: str = "zh") -> str:

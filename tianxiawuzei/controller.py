@@ -27,6 +27,7 @@ class AlarmController:
         self._speech_output_before_alarm: OutputState | None = None
         self.sleep_restore_pending = False
         self._sleep_disabled_changed_by_app = False
+        self.sleep_restore_attempted_on_last_close = False
 
     def update_config(self, config: AppConfig) -> None:
         if self.mode != Mode.NONE:
@@ -53,6 +54,7 @@ class AlarmController:
             self._poll_computer()
 
     def close(self, password: str) -> CloseResult:
+        self.sleep_restore_attempted_on_last_close = False
         if password != self.config.close_password:
             return CloseResult.WRONG_PASSWORD
 
@@ -62,9 +64,11 @@ class AlarmController:
         self._reset_runtime_state()
         self.mode = Mode.NONE
 
-        if needs_sleep_restore and not self.restore_sleep_disabled():
-            self.sleep_restore_pending = True
-            return CloseResult.ALARM_STOPPED_SETTINGS_NOT_RESTORED
+        if needs_sleep_restore:
+            self.sleep_restore_attempted_on_last_close = True
+            if not self.restore_sleep_disabled():
+                self.sleep_restore_pending = True
+                return CloseResult.ALARM_STOPPED_SETTINGS_NOT_RESTORED
         return CloseResult.CLOSED
 
     def restore_sleep_disabled(self) -> bool:

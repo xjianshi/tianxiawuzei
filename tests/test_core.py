@@ -4,7 +4,15 @@ from tempfile import TemporaryDirectory
 
 from tianxiawuzei.config import AppConfig, ConfigStore
 from tianxiawuzei.controller import AlarmController, CloseResult, Mode
-from tianxiawuzei.menu_state import menu_title_for_mode, scenario_hint_text, sleep_status_text, status_text_for_mode
+from tianxiawuzei import menu_app
+from tianxiawuzei.menu_state import (
+    menu_title_for_mode,
+    pending_sleep_restore_status_text,
+    scenario_hint_text,
+    sleep_status_text,
+    start_monitor_enabled,
+    status_text_for_mode,
+)
 from tianxiawuzei.platform import FakeMacPlatform
 from tianxiawuzei.support import FEEDBACK_EMAIL, feedback_mailto, usage_text
 
@@ -67,6 +75,7 @@ class AlarmControllerTest(unittest.TestCase):
 
         self.assertEqual(message, "电脑监控开启中")
         self.assertEqual(result, CloseResult.CLOSED)
+        self.assertFalse(self.controller.sleep_restore_attempted_on_last_close)
         self.assertEqual(self.platform.sleep_disabled, 1)
         self.assertEqual(self.platform.sleep_disabled_changes, [])
 
@@ -169,6 +178,7 @@ class AlarmControllerTest(unittest.TestCase):
         result = self.controller.close("1111")
 
         self.assertEqual(result, CloseResult.CLOSED)
+        self.assertTrue(self.controller.sleep_restore_attempted_on_last_close)
         self.assertEqual(self.controller.mode, Mode.NONE)
         self.assertEqual(self.platform.output_volume, 0)
         self.assertTrue(self.platform.output_muted)
@@ -249,9 +259,9 @@ class MenuStateTest(unittest.TestCase):
         self.assertEqual(menu_title_for_mode(Mode.COMPUTER), "警")
 
     def test_status_text_returns_to_computer_monitoring_after_alarm_stops(self):
-        self.assertEqual(status_text_for_mode(Mode.COMPUTER, True, "zh"), "状态：报警中")
-        self.assertEqual(status_text_for_mode(Mode.COMPUTER, False, "zh"), "状态：电脑监控开启中")
-        self.assertEqual(status_text_for_mode(Mode.COMPUTER, False, "en"), "Status: Computer monitoring")
+        self.assertEqual(status_text_for_mode(Mode.COMPUTER, True, "zh"), "监控状态：报警中")
+        self.assertEqual(status_text_for_mode(Mode.COMPUTER, False, "zh"), "监控状态：电脑监控开启中")
+        self.assertEqual(status_text_for_mode(Mode.COMPUTER, False, "en"), "Monitoring status: Computer monitoring")
 
     def test_sleep_status_text_shows_whether_system_sleep_is_allowed(self):
         self.assertEqual(sleep_status_text(0, "zh"), "系统休眠：允许")
@@ -263,6 +273,62 @@ class MenuStateTest(unittest.TestCase):
     def test_scenario_hint_explains_temporary_away_use_case(self):
         self.assertEqual(scenario_hint_text("zh"), "咖啡馆图书馆临时离开电脑时开启使用")
         self.assertEqual(scenario_hint_text("en"), "Use when briefly leaving your computer in a cafe or library")
+
+    def test_pending_sleep_restore_is_visible_and_blocks_starting_monitor(self):
+        self.assertEqual(pending_sleep_restore_status_text("zh"), "监控状态：系统设置待恢复")
+        self.assertFalse(start_monitor_enabled(Mode.NONE, True))
+        self.assertTrue(start_monitor_enabled(Mode.NONE, False))
+        self.assertFalse(start_monitor_enabled(Mode.COMPUTER, False))
+
+
+class MenuAppAlertTest(unittest.TestCase):
+    def test_tip_uses_modal_alert_instead_of_notification_center(self):
+        class FakeRumps:
+            alerts = []
+            notifications = []
+
+            @classmethod
+            def alert(cls, **kwargs):
+                cls.alerts.append(kwargs)
+
+            @classmethod
+            def notification(cls, *args):
+                cls.notifications.append(args)
+
+        original_rumps = menu_app.rumps
+        try:
+            menu_app.rumps = FakeRumps
+            app = type("FakeApp", (), {"_t": lambda _self, zh, _en: zh})()
+
+            menu_app.TianxiawuzeiApp._notify_tip(app, "天下无贼", "电脑监控已关闭", "系统休眠设置已恢复。")
+
+            self.assertEqual(
+                FakeRumps.alerts,
+                [
+                    {
+                        "title": "电脑监控已关闭",
+                        "message": "系统休眠设置已恢复。",
+                        "ok": "知道了",
+                    }
+                ],
+            )
+            self.assertEqual(FakeRumps.notifications, [])
+        finally:
+            menu_app.rumps = original_rumps
+
+    def test_close_alert_messages_separate_monitor_close_from_sleep_restore(self):
+        self.assertEqual(
+            menu_app.close_success_tip("zh"),
+            ("电脑监控已关闭", "关闭密码正确，电脑监控已关闭。"),
+        )
+        self.assertEqual(
+            menu_app.sleep_restore_success_tip("zh"),
+            ("系统休眠已恢复成功", "SleepDisabled 已恢复为 0。"),
+        )
+        self.assertEqual(
+            menu_app.sleep_restore_failed_tip("zh"),
+            ("未能成功恢复系统休眠", "系统密码对话框可能已取消或关闭。可以点击“恢复系统休眠设置”手动恢复。"),
+        )
 
 
 class SupportTextTest(unittest.TestCase):
