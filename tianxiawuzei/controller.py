@@ -8,8 +8,7 @@ from .platform import OutputState
 
 class Mode(str, Enum):
     NONE = "none"
-    CHARGER = "charger"
-    LID = "lid"
+    COMPUTER = "computer"
 
 
 class CloseResult(str, Enum):
@@ -32,36 +31,29 @@ class AlarmController:
             raise RuntimeError("报警监控运行期间不允许修改公共配置")
         self.config = config.normalized()
 
-    def start_charger_mode(self) -> str:
-        self._reset_runtime_state()
-        self.mode = Mode.CHARGER
-        return "充电器报警监控开启中"
-
-    def start_lid_mode(self) -> str:
+    def start_computer_monitor(self) -> str:
         self._reset_runtime_state()
         if not self.platform.set_sleep_disabled(1):
             self.mode = Mode.NONE
-            raise RuntimeError("无法开启合盖不睡眠，合盖报警模式未启动")
-        self.mode = Mode.LID
-        return "合盖报警监控开启中"
+            raise RuntimeError("无法开启合盖不睡眠，电脑监控未启动")
+        self.mode = Mode.COMPUTER
+        return "电脑监控开启中"
 
     def poll_once(self) -> None:
-        if self.mode == Mode.CHARGER:
-            self._poll_charger()
-        elif self.mode == Mode.LID:
-            self._poll_lid()
+        if self.mode == Mode.COMPUTER:
+            self._poll_computer()
 
     def close(self, password: str) -> CloseResult:
         if password != self.config.close_password:
             return CloseResult.WRONG_PASSWORD
 
-        was_lid_mode = self.mode == Mode.LID
+        needs_sleep_restore = self.mode == Mode.COMPUTER
         self.platform.stop_speech()
         self._restore_speech_output()
         self._reset_runtime_state()
         self.mode = Mode.NONE
 
-        if was_lid_mode and not self.platform.set_sleep_disabled(0):
+        if needs_sleep_restore and not self.platform.set_sleep_disabled(0):
             return CloseResult.ALARM_STOPPED_SETTINGS_NOT_RESTORED
         return CloseResult.CLOSED
 
@@ -80,21 +72,18 @@ class AlarmController:
         finally:
             self._restore_speech_output()
 
-    def _poll_charger(self) -> None:
-        if self.platform.power_source() == "Battery Power":
+    def _poll_computer(self) -> None:
+        if self.platform.lid_closed():
+            self._lid_triggered = True
+
+        charger_triggered = self.platform.power_source() == "Battery Power"
+        if charger_triggered or self._lid_triggered:
             self._speak_alarm()
             self.alarming = True
         else:
             self.platform.stop_speech()
             self._restore_speech_output()
             self.alarming = False
-
-    def _poll_lid(self) -> None:
-        if self.platform.lid_closed():
-            self._lid_triggered = True
-        if self._lid_triggered:
-            self._speak_alarm()
-            self.alarming = True
 
     def _speak_alarm(self) -> None:
         self._remember_speech_output()

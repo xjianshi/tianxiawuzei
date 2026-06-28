@@ -38,8 +38,7 @@ class TianxiawuzeiApp(BaseApp):
         self.name_item = rumps.MenuItem("天下无贼")
         self.scenario_hint_item = rumps.MenuItem(scenario_hint_text(self.config.language))
         self.status_item = rumps.MenuItem(status_text_for_mode(Mode.NONE, False, self.config.language))
-        self.start_charger_item = rumps.MenuItem("", callback=self.start_charger)
-        self.start_lid_item = rumps.MenuItem("", callback=self.start_lid)
+        self.start_monitor_item = rumps.MenuItem("", callback=self.start_monitor)
         self.close_item = rumps.MenuItem("", callback=self.close_current)
         self.set_volume_item = rumps.MenuItem("", callback=self.set_alarm_volume)
         self.set_text_item = rumps.MenuItem("", callback=self.set_alarm_text)
@@ -58,8 +57,7 @@ class TianxiawuzeiApp(BaseApp):
             self.scenario_hint_item,
             self.status_item,
             None,
-            self.start_charger_item,
-            self.start_lid_item,
+            self.start_monitor_item,
             self.close_item,
             None,
             self.set_volume_item,
@@ -76,31 +74,16 @@ class TianxiawuzeiApp(BaseApp):
         ]
         self._refresh_menu_text()
 
-    def start_charger(self, _):
-        self._log("start charger requested")
+    def start_monitor(self, _):
+        self._log("start computer monitor requested")
         if not self._close_existing_if_needed():
-            self._log("start charger canceled while closing existing monitor")
-            return
-        with self.lock:
-            message = self.controller.start_charger_mode()
-            self.last_power_source = None
-            self.last_lid_state = None
-            self._start_worker()
-            self._set_status(message)
-            self._sync_menu_title()
-            self._log(message)
-        rumps.notification("天下无贼", message, "拔电源将触发报警。")
-
-    def start_lid(self, _):
-        self._log("start lid requested")
-        if not self._close_existing_if_needed():
-            self._log("start lid canceled while closing existing monitor")
+            self._log("start computer monitor canceled while closing existing monitor")
             return
         with self.lock:
             try:
-                message = self.controller.start_lid_mode()
+                message = self.controller.start_computer_monitor()
             except RuntimeError as exc:
-                self._log(f"start lid failed: {exc}")
+                self._log(f"start computer monitor failed: {exc}")
                 rumps.alert(str(exc))
                 return
             self.last_power_source = None
@@ -109,10 +92,10 @@ class TianxiawuzeiApp(BaseApp):
             self._set_status(message)
             self._sync_menu_title()
             self._log(message)
-        rumps.notification("天下无贼", message, "合盖后报警会持续，直到验证关闭密码。")
+        rumps.notification("天下无贼", message, "拔电源或合盖将触发报警。")
 
     def close_current(self, _):
-        self._close_with_password("关闭当前报警模式")
+        self._close_with_password("关闭电脑监控")
 
     def set_alarm_volume(self, _):
         if not self._ensure_can_change_config():
@@ -261,9 +244,8 @@ class TianxiawuzeiApp(BaseApp):
     def _refresh_menu_text(self) -> None:
         self.scenario_hint_item.title = scenario_hint_text(self.config.language)
         self.status_item.title = status_text_for_mode(self.controller.mode, self.controller.alarming, self.config.language)
-        self.start_charger_item.title = self._t("开启充电器报警模式", "Start Charger Alarm Mode")
-        self.start_lid_item.title = self._t("开启合盖报警模式", "Start Lid Alarm Mode")
-        self.close_item.title = self._t("关闭当前报警模式", "Close Current Alarm Mode")
+        self.start_monitor_item.title = self._t("开启电脑监控（拔充电器/合盖触发报警）", "Start Computer Monitoring (charger/lid alarm)")
+        self.close_item.title = self._t("关闭电脑监控", "Close Computer Monitoring")
         self.set_volume_item.title = self._t("设置报警音量", "Set Alarm Volume")
         self.set_text_item.title = self._t("设置报警词汇", "Set Alarm Text")
         self.set_password_item.title = self._t("设置关闭密码", "Set Close Password")
@@ -279,12 +261,11 @@ class TianxiawuzeiApp(BaseApp):
         return en if self.config.language == "en" else zh
 
     def _log_state_if_changed(self) -> None:
-        if self.controller.mode == Mode.CHARGER:
+        if self.controller.mode == Mode.COMPUTER:
             source = self.controller.platform.power_source()
             if source != self.last_power_source:
                 self.last_power_source = source
                 self._log(f"power source: {source}")
-        elif self.controller.mode == Mode.LID:
             closed = self.controller.platform.lid_closed()
             if closed != self.last_lid_state:
                 self.last_lid_state = closed

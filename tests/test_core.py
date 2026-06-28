@@ -50,24 +50,18 @@ class AlarmControllerTest(unittest.TestCase):
         self.config = AppConfig()
         self.controller = AlarmController(self.platform, self.config)
 
-    def test_charger_mode_starts_with_expected_status_message(self):
-        message = self.controller.start_charger_mode()
+    def test_computer_monitor_starts_with_expected_status_message(self):
+        message = self.controller.start_computer_monitor()
 
-        self.assertEqual(message, "充电器报警监控开启中")
-        self.assertEqual(self.controller.mode, Mode.CHARGER)
+        self.assertEqual(message, "电脑监控开启中")
+        self.assertEqual(self.controller.mode, Mode.COMPUTER)
         self.assertEqual(self.platform.output_changes, 0)
+        self.assertEqual(self.platform.sleep_disabled, 1)
 
-    def test_lid_mode_starts_without_changing_system_volume(self):
-        message = self.controller.start_lid_mode()
-
-        self.assertEqual(message, "合盖报警监控开启中")
-        self.assertEqual(self.controller.mode, Mode.LID)
-        self.assertEqual(self.platform.output_changes, 0)
-
-    def test_charger_mode_alarms_on_battery_and_stops_on_ac(self):
+    def test_computer_monitor_alarms_on_battery_and_stops_on_ac(self):
         self.platform.output_volume = 35
         self.platform.output_muted = False
-        self.controller.start_charger_mode()
+        self.controller.start_computer_monitor()
 
         self.platform.current_power_source = "Battery Power"
         self.controller.poll_once()
@@ -84,7 +78,7 @@ class AlarmControllerTest(unittest.TestCase):
         self.assertFalse(self.platform.output_muted)
 
     def test_alarm_restores_configured_volume_if_someone_turns_it_down(self):
-        self.controller.start_charger_mode()
+        self.controller.start_computer_monitor()
         self.platform.current_power_source = "Battery Power"
         self.controller.poll_once()
 
@@ -95,11 +89,11 @@ class AlarmControllerTest(unittest.TestCase):
         self.assertEqual(self.platform.output_volume, 60)
         self.assertFalse(self.platform.output_muted)
 
-    def test_lid_mode_sets_sleep_disabled_and_latches_alarm_after_lid_close(self):
-        message = self.controller.start_lid_mode()
+    def test_computer_monitor_sets_sleep_disabled_and_latches_alarm_after_lid_close(self):
+        message = self.controller.start_computer_monitor()
 
-        self.assertEqual(message, "合盖报警监控开启中")
-        self.assertEqual(self.controller.mode, Mode.LID)
+        self.assertEqual(message, "电脑监控开启中")
+        self.assertEqual(self.controller.mode, Mode.COMPUTER)
         self.assertEqual(self.platform.sleep_disabled, 1)
 
         self.platform.current_lid_closed = True
@@ -111,10 +105,10 @@ class AlarmControllerTest(unittest.TestCase):
         self.assertEqual(self.platform.output_volume, 60)
         self.assertEqual(len(self.platform.spoken), 1)
 
-    def test_lid_mode_close_restores_output_from_before_alarm(self):
+    def test_computer_monitor_close_restores_output_from_before_alarm(self):
         self.platform.output_volume = 35
         self.platform.output_muted = False
-        self.controller.start_lid_mode()
+        self.controller.start_computer_monitor()
 
         self.platform.current_lid_closed = True
         self.controller.poll_once()
@@ -125,7 +119,7 @@ class AlarmControllerTest(unittest.TestCase):
         self.assertFalse(self.platform.output_muted)
 
     def test_alarm_repeats_after_previous_phrase_finishes(self):
-        self.controller.start_charger_mode()
+        self.controller.start_computer_monitor()
         self.platform.current_power_source = "Battery Power"
         self.controller.poll_once()
 
@@ -134,29 +128,29 @@ class AlarmControllerTest(unittest.TestCase):
 
         self.assertEqual(len(self.platform.spoken), 2)
 
-    def test_lid_mode_does_not_start_when_sleep_disabled_cannot_be_enabled(self):
+    def test_computer_monitor_does_not_start_when_sleep_disabled_cannot_be_enabled(self):
         self.platform.fail_enable_sleep = True
 
         with self.assertRaises(RuntimeError):
-            self.controller.start_lid_mode()
+            self.controller.start_computer_monitor()
 
         self.assertEqual(self.controller.mode, Mode.NONE)
         self.assertEqual(self.platform.sleep_disabled, 0)
 
     def test_wrong_close_password_does_not_stop_monitor_or_change_volume(self):
-        self.controller.start_charger_mode()
+        self.controller.start_computer_monitor()
         self.platform.current_power_source = "Battery Power"
         self.controller.poll_once()
 
         result = self.controller.close("wrong")
 
         self.assertEqual(result, CloseResult.WRONG_PASSWORD)
-        self.assertEqual(self.controller.mode, Mode.CHARGER)
+        self.assertEqual(self.controller.mode, Mode.COMPUTER)
         self.assertTrue(self.controller.alarming)
         self.assertEqual(self.platform.output_volume, 60)
 
-    def test_correct_close_password_stops_charger_mode(self):
-        self.controller.start_charger_mode()
+    def test_correct_close_password_stops_computer_monitor(self):
+        self.controller.start_computer_monitor()
 
         result = self.controller.close("1111")
 
@@ -164,10 +158,11 @@ class AlarmControllerTest(unittest.TestCase):
         self.assertEqual(self.controller.mode, Mode.NONE)
         self.assertEqual(self.platform.output_volume, 0)
         self.assertTrue(self.platform.output_muted)
+        self.assertEqual(self.platform.sleep_disabled, 0)
 
-    def test_lid_mode_is_not_fully_closed_when_sleep_restore_fails(self):
+    def test_computer_monitor_is_not_fully_closed_when_sleep_restore_fails(self):
         self.platform.fail_restore_sleep = True
-        self.controller.start_lid_mode()
+        self.controller.start_computer_monitor()
 
         result = self.controller.close("1111")
 
@@ -176,7 +171,7 @@ class AlarmControllerTest(unittest.TestCase):
         self.assertEqual(self.platform.sleep_disabled, 1)
 
     def test_public_config_cannot_change_while_monitor_is_running(self):
-        self.controller.start_charger_mode()
+        self.controller.start_computer_monitor()
 
         with self.assertRaises(RuntimeError):
             self.controller.update_config(AppConfig(alarm_volume=25))
@@ -213,17 +208,12 @@ class MenuStateTest(unittest.TestCase):
         self.assertEqual(menu_title_for_mode(Mode.NONE), "贼")
 
     def test_menu_title_is_alarm_when_monitor_is_running(self):
-        self.assertEqual(menu_title_for_mode(Mode.CHARGER), "警")
-        self.assertEqual(menu_title_for_mode(Mode.LID), "警")
+        self.assertEqual(menu_title_for_mode(Mode.COMPUTER), "警")
 
-    def test_status_text_returns_to_charger_monitoring_after_alarm_stops(self):
-        self.assertEqual(status_text_for_mode(Mode.CHARGER, True, "zh"), "状态：报警中")
-        self.assertEqual(status_text_for_mode(Mode.CHARGER, False, "zh"), "状态：充电器报警监控开启中")
-        self.assertEqual(status_text_for_mode(Mode.CHARGER, False, "en"), "Status: Charger alarm monitoring")
-
-    def test_status_text_returns_to_lid_monitoring_when_not_alarming(self):
-        self.assertEqual(status_text_for_mode(Mode.LID, False, "zh"), "状态：合盖报警监控开启中")
-        self.assertEqual(status_text_for_mode(Mode.LID, False, "en"), "Status: Lid alarm monitoring")
+    def test_status_text_returns_to_computer_monitoring_after_alarm_stops(self):
+        self.assertEqual(status_text_for_mode(Mode.COMPUTER, True, "zh"), "状态：报警中")
+        self.assertEqual(status_text_for_mode(Mode.COMPUTER, False, "zh"), "状态：电脑监控开启中")
+        self.assertEqual(status_text_for_mode(Mode.COMPUTER, False, "en"), "Status: Computer monitoring")
 
     def test_scenario_hint_explains_temporary_away_use_case(self):
         self.assertEqual(scenario_hint_text("zh"), "咖啡馆图书馆临时离开电脑时开启使用")
@@ -235,8 +225,9 @@ class SupportTextTest(unittest.TestCase):
         text = usage_text("zh")
 
         self.assertIn("咖啡馆", text)
-        self.assertIn("充电器报警模式", text)
-        self.assertIn("合盖报警模式", text)
+        self.assertIn("电脑监控", text)
+        self.assertIn("拔掉电源", text)
+        self.assertIn("合盖", text)
         self.assertIn("系统密码", text)
         self.assertIn("SleepDisabled", text)
         self.assertIn("基于兴趣开发", text)

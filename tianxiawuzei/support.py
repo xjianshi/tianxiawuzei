@@ -21,17 +21,15 @@ Use cases:
 - You are worried that someone may unplug the charger, move the computer, or close the lid.
 - You briefly leave your seat and want the computer to speak an alarm when touched.
 
-Charger alarm mode:
+Computer monitoring:
+- Use “Start Computer Monitoring (charger/lid alarm)” from the menu bar.
 - The menu bar title changes from “贼” to “警” after monitoring starts.
 - Unplugging power triggers the alarm.
-- Plugging power back in stops the speech and keeps monitoring.
-
-Lid alarm mode:
-- The menu bar title changes from “贼” to “警” after monitoring starts.
+- Plugging power back in stops charger-triggered speech and keeps monitoring.
 - Closing the lid triggers the alarm.
 - Lid alarm is latched: it keeps alarming after the lid is opened until the close password is entered.
 
-Why lid alarm needs the system password:
+Why computer monitoring needs the system password:
 macOS may immediately sleep when the lid is closed, and a normal app cannot keep alarming after sleep. To make lid monitoring more reliable, Tianxiawuzei temporarily changes the system power setting SleepDisabled. This is a system-level setting, so macOS requires administrator authorization when enabling or disabling lid alarm monitoring.
 
 Closing and safety:
@@ -48,17 +46,15 @@ Closing and safety:
 - 担心别人拔掉充电器、移动电脑或合上屏幕。
 - 临时离开座位，希望电脑被触碰时发出语音提醒。
 
-充电器报警模式：
+电脑监控：
+- 从菜单栏点击“开启电脑监控（拔充电器/合盖触发报警）”。
 - 开启后，菜单栏从“贼”变为“警”。
 - 拔掉电源时触发报警。
-- 插回电源后停止播报，并继续保持监控。
-
-合盖报警模式：
-- 开启后，菜单栏从“贼”变为“警”。
+- 插回电源后停止由充电器触发的播报，并继续保持监控。
 - 检测到合盖后触发报警。
 - 合盖报警采用锁存规则：开盖后也会继续报警，直到输入关闭密码关闭监控。
 
-为什么开关合盖报警监控需要输入系统密码：
+为什么开关电脑监控需要输入系统密码：
 合盖后 macOS 默认可能立即睡眠，普通 App 无法继续报警。为了让合盖监控尽量可靠，天下无贼需要临时修改系统电源设置 SleepDisabled。这个操作属于系统级设置，macOS 要求管理员授权，所以开启和关闭合盖报警监控时可能会弹出系统密码窗口。
 
 关闭与安全：

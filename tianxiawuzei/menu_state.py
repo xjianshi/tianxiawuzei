@@ -19,15 +19,11 @@ def status_text_for_mode(mode: Mode, alarming: bool, language: str = "zh") -> st
     if language == "en":
         if alarming:
             return "Status: Alarming"
-        if mode == Mode.CHARGER:
-            return "Status: Charger alarm monitoring"
-        if mode == Mode.LID:
-            return "Status: Lid alarm monitoring"
+        if mode == Mode.COMPUTER:
+            return "Status: Computer monitoring"
         return "Status: Off"
     if alarming:
         return "状态：报警中"
-    if mode == Mode.CHARGER:
-        return "状态：充电器报警监控开启中"
-    if mode == Mode.LID:
-        return "状态：合盖报警监控开启中"
+    if mode == Mode.COMPUTER:
+        return "状态：电脑监控开启中"
     return "状态：未开启"
