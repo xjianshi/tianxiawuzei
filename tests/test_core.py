@@ -98,6 +98,23 @@ class AlarmControllerTest(unittest.TestCase):
         self.assertEqual(self.platform.output_volume, 35)
         self.assertFalse(self.platform.output_muted)
 
+    def test_computer_monitor_does_not_alarm_when_started_on_battery(self):
+        self.platform.current_power_source = "Battery Power"
+        self.controller.start_computer_monitor()
+
+        self.controller.poll_once()
+
+        self.assertFalse(self.controller.alarming)
+        self.assertEqual(self.platform.spoken, [])
+
+        self.platform.current_power_source = "AC Power"
+        self.controller.poll_once()
+        self.platform.current_power_source = "Battery Power"
+        self.controller.poll_once()
+
+        self.assertTrue(self.controller.alarming)
+        self.assertEqual(self.platform.spoken[-1], ("Sin-ji", 165, "请不要碰我电脑"))
+
     def test_alarm_restores_configured_volume_if_someone_turns_it_down(self):
         self.controller.start_computer_monitor()
         self.platform.current_power_source = "Battery Power"

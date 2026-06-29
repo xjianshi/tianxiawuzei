@@ -24,7 +24,9 @@ class AlarmController:
         self.mode = Mode.NONE
         self.alarming = False
         self._lid_triggered = False
+        self._charger_triggered = False
         self._speech_output_before_alarm: OutputState | None = None
+        self._last_power_source: str | None = None
         self.sleep_restore_pending = False
         self._sleep_disabled_changed_by_app = False
         self.sleep_restore_attempted_on_last_close = False
@@ -47,6 +49,7 @@ class AlarmController:
             self._sleep_disabled_changed_by_app = True
         self.sleep_restore_pending = False
         self.mode = Mode.COMPUTER
+        self._last_power_source = self.platform.power_source()
         return "电脑监控开启中"
 
     def poll_once(self) -> None:
@@ -104,8 +107,13 @@ class AlarmController:
         if self.platform.lid_closed():
             self._lid_triggered = True
 
-        charger_triggered = self.platform.power_source() == "Battery Power"
-        if charger_triggered or self._lid_triggered:
+        power_source = self.platform.power_source()
+        if self._last_power_source == "AC Power" and power_source == "Battery Power":
+            self._charger_triggered = True
+        elif power_source == "AC Power":
+            self._charger_triggered = False
+        self._last_power_source = power_source
+        if self._charger_triggered or self._lid_triggered:
             self._speak_alarm()
             self.alarming = True
         else:
@@ -133,4 +141,6 @@ class AlarmController:
     def _reset_runtime_state(self) -> None:
         self.alarming = False
         self._lid_triggered = False
+        self._charger_triggered = False
         self._speech_output_before_alarm = None
+        self._last_power_source = None
